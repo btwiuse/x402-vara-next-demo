@@ -5,12 +5,18 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
-    "start": "next start"
+    "start": "next start",
+    "demo": "tsx scripts/demo-agent.ts"
   },
   "dependencies": {
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "next": "15.5.4"
+    "next": "15.5.4",
+    "@aptos-labs/ts-sdk": "^1.26.0",
+    "@langchain/core": "^0.3.0",
+    "@langchain/google-genai": "^0.1.0",
+    "langchain": "^0.3.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "typescript": "^5",
@@ -18,6 +24,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4"
+    "tailwindcss": "^4",
+    "tsx": "^4.7.1"
   }
 }
