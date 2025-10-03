@@ -304,7 +304,7 @@ export default function Home() {
                         <p className="text-gray-700">
                           <strong>Recipient:</strong> {paymentDetails.accepts[0].payTo?.slice(0, 10)}...
                         </p>
-                        <p className="text-gray-700 text-xs mt-1">
+                        <p className="text-gray-700">
                           <strong>Scheme:</strong> {paymentDetails.accepts[0].scheme}
                         </p>
                       </>
