@@ -142,7 +142,11 @@ export function paymentMiddleware(
       });
 
       const verification: VerifyResponse = await verifyResponse.json();
+      const verificationTime = verifyResponse.headers.get('x-verification-time');
       console.log(`[x402 Middleware] Verification result:`, verification);
+      if (verificationTime) {
+        console.log(`[x402 Middleware] ⏱️  Verification took ${verificationTime}ms`);
+      }
 
       // Check if payment is valid
       if (!verification.isValid) {
@@ -176,7 +180,11 @@ export function paymentMiddleware(
       });
 
       const settlement: SettleResponse = await settleResponse.json();
+      const settlementTime = settleResponse.headers.get('x-settlement-time');
       console.log(`[x402 Middleware] Settlement result:`, settlement);
+      if (settlementTime) {
+        console.log(`[x402 Middleware] ⏱️  Settlement took ${settlementTime}ms`);
+      }
 
       // Step 3: Only continue if payment settled successfully
       if (!settlement.success) {
@@ -206,6 +214,14 @@ export function paymentMiddleware(
         "X-Payment-Response",
         Buffer.from(JSON.stringify(paymentResponse)).toString('base64')
       );
+
+      // Add timing headers for client debugging
+      if (verificationTime) {
+        responseHeaders.set('X-Verification-Time', verificationTime);
+      }
+      if (settlementTime) {
+        responseHeaders.set('X-Settlement-Time', settlementTime);
+      }
 
       return new Response(response.body, {
         status: response.status,

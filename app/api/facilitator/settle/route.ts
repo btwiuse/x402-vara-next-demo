@@ -23,6 +23,7 @@ export const dynamic = "force-dynamic";
  * Only call this AFTER the work/resource has been verified
  */
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
   console.log(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
   console.log(`[Facilitator Settle] POST /api/facilitator/settle`);
   console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
@@ -252,6 +253,9 @@ export async function POST(request: NextRequest) {
     console.log(`\n✅ [Facilitator Settle] Payment settled successfully!`);
     console.log(`[Facilitator Settle] Transaction hash: ${pendingTx.hash}`);
 
+    const duration = Date.now() - startTime;
+    console.log(`[Facilitator Settle] ⏱️  Settlement took ${duration}ms`);
+
     const settleResponse: SettleResponse = {
       success: true,
       error: null,
@@ -260,7 +264,9 @@ export async function POST(request: NextRequest) {
     };
 
     console.log(`[Facilitator Settle] Response:`, settleResponse);
-    return NextResponse.json(settleResponse);
+    const nextResponse = NextResponse.json(settleResponse);
+    nextResponse.headers.set('X-Settlement-Time', duration.toString());
+    return nextResponse;
 
   } catch (error: any) {
     console.error(`\n❌ [Facilitator Settle] ERROR during settlement`);

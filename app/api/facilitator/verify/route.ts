@@ -21,6 +21,7 @@ export const dynamic = "force-dynamic";
  * This is fast and cheap - just validation, no blockchain submission
  */
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
   console.log(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
   console.log(`[Facilitator Verify] POST /api/facilitator/verify`);
   console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
@@ -209,13 +210,18 @@ export async function POST(request: NextRequest) {
 
     console.log(`\n✅ [Facilitator Verify] Payment payload is valid!`);
 
+    const duration = Date.now() - startTime;
+    console.log(`[Facilitator Verify] ⏱️  Verification took ${duration}ms`);
+
     const response: VerifyResponse = {
       isValid: true,
       invalidReason: null,
     };
 
     console.log(`[Facilitator Verify] Response:`, response);
-    return NextResponse.json(response);
+    const nextResponse = NextResponse.json(response);
+    nextResponse.headers.set('X-Verification-Time', duration.toString());
+    return nextResponse;
 
   } catch (error: any) {
     console.error("[Facilitator Verify] Error verifying payment:", error);
