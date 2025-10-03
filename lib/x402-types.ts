@@ -10,6 +10,7 @@ export type RouteConfig = {
     description?: string;
     mimeType?: string;
     outputSchema?: Record<string, any>;
+    maxTimeoutSeconds?: number;
   };
 };
 

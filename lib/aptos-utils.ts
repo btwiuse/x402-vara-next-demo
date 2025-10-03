@@ -31,9 +31,25 @@ export interface X402PaymentResponse {
 
 /**
  * Initialize Aptos client based on network
+ * Supports both x402 format (aptos-testnet) and simple format (testnet)
  */
 export function getAptosClient(network: string = "testnet"): Aptos {
-  const aptosNetwork = network.toLowerCase() as Network;
+  // Map x402 network identifiers to Aptos SDK network enum
+  let aptosNetwork: Network;
+  
+  if (network === "aptos-mainnet" || network === "mainnet") {
+    aptosNetwork = Network.MAINNET;
+  } else if (network === "aptos-testnet" || network === "testnet") {
+    aptosNetwork = Network.TESTNET;
+  } else if (network === "aptos-devnet" || network === "devnet") {
+    aptosNetwork = Network.DEVNET;
+  } else if (network.startsWith("aptos-")) {
+    // Strip "aptos-" prefix and use as network
+    aptosNetwork = network.replace("aptos-", "").toLowerCase() as Network;
+  } else {
+    aptosNetwork = network.toLowerCase() as Network;
+  }
+  
   const config = new AptosConfig({ network: aptosNetwork });
   return new Aptos(config);
 }

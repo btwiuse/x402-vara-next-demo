@@ -21,9 +21,7 @@ export const middleware = paymentMiddleware(
     },
   },
   {
-  
-    // This demo uses internal facilitator (also included in this repo)
-    // Public users must provide their own facilitator URL or deploy one
+    // Facilitator URL is REQUIRED for x402 protocol
     url: process.env.FACILITATOR_URL!,
   }
 );

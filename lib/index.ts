@@ -16,7 +16,6 @@ export {
   verifyPaymentSimple,
   settlePaymentSimple,
   createPaymentResponse,
-  getFacilitatorUrl,
 } from "./facilitator-client";
 
 // Aptos utilities (for advanced usage)
@@ -26,4 +25,8 @@ export {
   signAndSubmitPayment,
   getAccountBalance,
 } from "./aptos-utils";
+
+// Simple x402 client (for buyers/consumers)
+export { createX402Client } from "./x402-client";
+export type { X402ClientConfig, X402Response } from "./x402-client";
 

@@ -89,16 +89,12 @@ export async function verifyPayment(
  * 
  * @param facilitatorUrl - URL of the facilitator settle endpoint
  * @param signedTransaction - Base64 encoded signed transaction
- * @param expectedRecipient - Expected payment recipient address
- * @param expectedAmount - Expected payment amount in octas
  * @param expectedNetwork - Expected network (testnet/mainnet)
  * @returns Settlement result with transaction hash
  */
 export async function settlePayment(
   facilitatorUrl: string,
   signedTransaction: string,
-  expectedRecipient: string,
-  expectedAmount: string,
   expectedNetwork: string = "testnet"
 ): Promise<SettlePaymentResponse> {
   try {
@@ -109,8 +105,6 @@ export async function settlePayment(
       },
       body: JSON.stringify({
         signedTransaction,
-        expectedRecipient,
-        expectedAmount,
         expectedNetwork,
       }),
     });
@@ -153,34 +147,13 @@ export function createPaymentResponse(settlementResult: SettlePaymentResponse) {
   };
 }
 
-/**
- * Get facilitator verify URL from environment or use default
- * 
- * @returns Facilitator verify endpoint URL
- */
-export function getFacilitatorVerifyUrl(): string {
-  return process.env.FACILITATOR_VERIFY_URL || "/api/facilitator/verify";
-}
+// Removed: Facilitator URL is now REQUIRED, no defaults/fallbacks
 
 /**
- * Get facilitator settle URL from environment or use default
+ * Verify payment with facilitator
+ * Facilitator URL MUST be provided - no defaults
  * 
- * @returns Facilitator settle endpoint URL
- */
-export function getFacilitatorSettleUrl(): string {
-  return process.env.FACILITATOR_SETTLE_URL || "/api/facilitator/settle";
-}
-
-/**
- * Get facilitator verify URL (for backward compatibility)
- */
-export function getFacilitatorUrl(): string {
-  return getFacilitatorVerifyUrl();
-}
-
-/**
- * Convenience function to verify payment with automatic URL resolution
- * 
+ * @param facilitatorUrl - Facilitator base URL (e.g., "https://facilitator.com")
  * @param signedTransaction - Base64 encoded signed transaction
  * @param expectedRecipient - Expected payment recipient
  * @param expectedAmount - Expected payment amount
@@ -188,14 +161,17 @@ export function getFacilitatorUrl(): string {
  * @returns Verification result
  */
 export async function verifyPaymentSimple(
+  facilitatorUrl: string,
   signedTransaction: string,
   expectedRecipient: string,
   expectedAmount: string,
   expectedNetwork: string = "testnet"
 ): Promise<VerifyPaymentResponse> {
-  const facilitatorUrl = getFacilitatorVerifyUrl();
+  if (!facilitatorUrl) {
+    throw new Error("Facilitator URL is required - no default available");
+  }
   return verifyPayment(
-    facilitatorUrl,
+    `${facilitatorUrl}/verify`,
     signedTransaction,
     expectedRecipient,
     expectedAmount,
@@ -204,26 +180,25 @@ export async function verifyPaymentSimple(
 }
 
 /**
- * Convenience function to settle payment with automatic URL resolution
+ * Settle payment with facilitator
+ * Facilitator URL MUST be provided - no defaults
  * 
+ * @param facilitatorUrl - Facilitator base URL (e.g., "https://facilitator.com")
  * @param signedTransaction - Base64 encoded signed transaction
- * @param expectedRecipient - Expected payment recipient
- * @param expectedAmount - Expected payment amount
  * @param expectedNetwork - Expected network
  * @returns Settlement result
  */
 export async function settlePaymentSimple(
+  facilitatorUrl: string,
   signedTransaction: string,
-  expectedRecipient: string,
-  expectedAmount: string,
   expectedNetwork: string = "testnet"
 ): Promise<SettlePaymentResponse> {
-  const facilitatorUrl = getFacilitatorSettleUrl();
+  if (!facilitatorUrl) {
+    throw new Error("Facilitator URL is required - no default available");
+  }
   return settlePayment(
-    facilitatorUrl,
+    `${facilitatorUrl}/settle`,
     signedTransaction,
-    expectedRecipient,
-    expectedAmount,
     expectedNetwork
   );
 }
