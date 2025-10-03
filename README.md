@@ -366,13 +366,191 @@ interface PaymentRequiredResponse {
 
 ## Client Integration
 
-For clients consuming your protected APIs, see the [client documentation](https://github.com/yourusername/aptos-x402/blob/main/docs/CLIENT.md).
+### How Clients Pay for Protected APIs
+
+When your API returns 402, clients need to sign an Aptos transaction and retry with the `X-PAYMENT` header.
+
+### Understanding the X-PAYMENT Header
+
+The middleware expects a base64-encoded JSON payload in the `X-PAYMENT` header:
+
+```typescript
+{
+  "x402Version": 1,
+  "scheme": "exact",
+  "network": "aptos-testnet",  // or "aptos-mainnet"
+  "payload": {
+    "signature": "<base64-encoded-BCS-signature>",
+    "transaction": "<base64-encoded-BCS-transaction>"
+  }
+}
+```
+
+### Complete Client Example
+
+```typescript
+import { Aptos, AptosConfig, Network, Account, Ed25519PrivateKey } from '@aptos-labs/ts-sdk';
+
+async function callProtectedAPI(url: string, privateKey: string) {
+  // Step 1: Try without payment
+  let response = await fetch(url);
+  
+  if (response.status === 402) {
+    // Step 2: Parse payment requirements
+    const paymentReqs = await response.json();
+    const requirement = paymentReqs.accepts[0];
+    
+    console.log('Payment required:', {
+      amount: requirement.maxAmountRequired,
+      recipient: requirement.payTo,
+      network: requirement.network
+    });
+    
+    // Step 3: Initialize Aptos client
+    const config = new AptosConfig({ 
+      network: requirement.network === 'aptos-testnet' ? Network.TESTNET : Network.MAINNET 
+    });
+    const aptos = new Aptos(config);
+    
+    // Step 4: Create account from private key
+    const account = Account.fromPrivateKey({
+      privateKey: new Ed25519PrivateKey(privateKey)
+    });
+    
+    // Step 5: Build transaction
+    const transaction = await aptos.transaction.build.simple({
+      sender: account.accountAddress,
+      data: {
+        function: '0x1::aptos_account::transfer',
+        functionArguments: [
+          requirement.payTo,
+          requirement.maxAmountRequired
+        ]
+      }
+    });
+    
+    // Step 6: Sign transaction (offline - no gas yet)
+    const authenticator = aptos.transaction.sign({ 
+      signer: account, 
+      transaction 
+    });
+    
+    // Step 7: Serialize to BCS and encode to base64
+    const transactionBytes = transaction.bcsToBytes();
+    const signatureBytes = authenticator.bcsToBytes();
+    
+    const transactionBase64 = Buffer.from(transactionBytes).toString('base64');
+    const signatureBase64 = Buffer.from(signatureBytes).toString('base64');
+    
+    // Step 8: Create payment payload
+    const paymentPayload = {
+      x402Version: 1,
+      scheme: requirement.scheme,
+      network: requirement.network,
+      payload: {
+        signature: signatureBase64,
+        transaction: transactionBase64
+      }
+    };
+    
+    // Step 9: Encode payload to base64
+    const paymentHeader = Buffer.from(JSON.stringify(paymentPayload)).toString('base64');
+    
+    // Step 10: Retry with payment
+    response = await fetch(url, {
+      headers: {
+        'X-PAYMENT': paymentHeader
+      }
+    });
+  }
+  
+  // Step 11: Get the data
+  const data = await response.json();
+  console.log('Success!', data);
+  
+  // Step 12: Check payment receipt (optional)
+  const paymentResponse = response.headers.get('x-payment-response');
+  if (paymentResponse) {
+    const receipt = JSON.parse(Buffer.from(paymentResponse, 'base64').toString());
+    console.log('Payment settled:', receipt.settlement.txHash);
+  }
+  
+  return data;
+}
+
+// Usage
+await callProtectedAPI(
+  'http://localhost:3000/api/premium/weather',
+  '0x...your_private_key...'
+);
+```
+
+### Quick Test with curl
+
+**1. Get payment requirements:**
+```bash
+curl http://localhost:3000/api/premium/weather
+```
+
+**Response:**
+```json
+{
+  "x402Version": 1,
+  "accepts": [{
+    "scheme": "exact",
+    "network": "aptos-testnet",
+    "maxAmountRequired": "1000000",
+    "payTo": "0x...",
+    "resource": "http://localhost:3000/api/premium/weather"
+  }]
+}
+```
+
+**2. Make payment request:**
+```bash
+curl http://localhost:3000/api/premium/weather \
+  -H "X-PAYMENT: eyJ4NDAyVmVyc2lvbiI6MSwic2NoZW1lIjoi..."
+```
+
+### Browser Integration
+
+For browser applications, you can use wallet integrations:
+
+```typescript
+// Using Petra Wallet
+const { signTransaction } = usePetraWallet();
+const signedTx = await signTransaction(transaction);
+```
+
+### AI Agent Integration (Coming Soon)
+
+```typescript
+import { X402Client } from '@adipundir/aptos-x402/client';
+
+const client = new X402Client({
+  privateKey: process.env.AGENT_KEY,
+  network: 'testnet'
+});
+
+// Agent automatically handles payments
+const data = await client.get('https://api.example.com/premium/data');
+```
 
 ## Examples
 
-- [Simple Seller](https://github.com/yourusername/aptos-x402/tree/main/examples/simple-seller) - Basic API protection
-- [AI Agent](https://github.com/yourusername/aptos-x402/tree/main/examples/ai-agent) - Autonomous payments
-- [Full Demo](https://github.com/yourusername/aptos-x402/tree/main/app) - Complete implementation
+### Example Projects in This Repo
+
+- **[examples/simple-seller/](./examples/simple-seller/)** - Basic middleware configuration
+- **[examples/facilitator/](./examples/facilitator/)** - Facilitator setup guide  
+- **[app/](./app/)** - Complete working demo with frontend
+
+### Live Demo
+
+Visit **https://aptos-x402.vercel.app** to see the complete payment flow in action:
+- Try requesting without payment (gets 402)
+- Sign transaction with demo account
+- See payment verification and settlement
+- View transaction on Aptos Explorer
 
 ## Facilitator Setup
 

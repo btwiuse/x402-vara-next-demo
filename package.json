@@ -1,6 +1,6 @@
 {
   "name": "@adipundir/aptos-x402",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Official x402 Payment Protocol SDK for Aptos blockchain",
   "author": "Adi Pundir",
   "license": "MIT",
