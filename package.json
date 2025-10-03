@@ -50,26 +50,27 @@
     "test": "echo \"Tests coming soon\" && exit 0"
   },
   "peerDependencies": {
-    "next": ">=15.0.0",
-    "@aptos-labs/ts-sdk": ">=1.26.0"
+    "@aptos-labs/ts-sdk": ">=1.26.0",
+    "next": ">=15.0.0"
   },
   "dependencies": {
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
-    "next": "15.5.4",
-    "@aptos-labs/ts-sdk": "^1.26.0",
+    "@aptos-labs/ts-sdk": ">=1.26.0",
     "@langchain/core": "^0.3.0",
     "@langchain/google-genai": "^0.1.0",
+    "@vercel/analytics": "^1.5.0",
     "langchain": "^0.3.0",
+    "next": ">=15.0.0",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@tailwindcss/postcss": "^4",
     "tailwindcss": "^4",
-    "tsx": "^4.7.1"
+    "tsx": "^4.7.1",
+    "typescript": "^5"
   }
 }
