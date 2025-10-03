@@ -1,12 +1,57 @@
 {
-  "name": "aptos-x402",
-  "version": "0.1.0",
-  "private": true,
+  "name": "@adipundir/aptos-x402",
+  "version": "0.1.1",
+  "description": "Official x402 Payment Protocol SDK for Aptos blockchain",
+  "author": "Adi Pundir",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/adipundir/aptos-x402"
+  },
+  "homepage": "https://aptos-x402.vercel.app",
+  "keywords": [
+    "x402",
+    "aptos",
+    "payment",
+    "micropayment",
+    "http-402",
+    "blockchain",
+    "cryptocurrency"
+  ],
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./dist/server/index.d.ts",
+      "default": "./dist/server/index.js"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/types/index.js"
+    }
+  },
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
+    "build": "npm run build:sdk && npm run build:demo",
+    "build:sdk": "tsc -p tsconfig.sdk.json",
+    "build:demo": "next build --turbopack",
     "start": "next start",
-    "demo": "tsx scripts/demo-agent.ts"
+    "demo": "tsx scripts/demo-agent.ts",
+    "prepublishOnly": "npm run build:sdk",
+    "test": "echo \"Tests coming soon\" && exit 0"
+  },
+  "peerDependencies": {
+    "next": ">=15.0.0",
+    "@aptos-labs/ts-sdk": ">=1.26.0"
   },
   "dependencies": {
     "react": "19.1.0",

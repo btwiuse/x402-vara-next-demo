@@ -1,0 +1,10 @@
+# Your Aptos wallet address (receives payments)
+PAYMENT_RECIPIENT_ADDRESS=0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef
+
+# Facilitator URL (handles verify and settle operations)
+# Option 1: Use the public demo facilitator
+FACILITATOR_URL=https://aptos-x402.vercel.app/api/facilitator
+
+# Option 2: Deploy your own facilitator
+# FACILITATOR_URL=https://your-app.vercel.app/api/facilitator
+
