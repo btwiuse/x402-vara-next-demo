@@ -45,7 +45,7 @@ import type {
 } from "../types";
 import {
   X402_VERSION,
-  APTOS_SCHEME,
+  X402_SCHEME,
   APTOS_TESTNET,
   APTOS_MAINNET,
 } from "../types";
@@ -110,7 +110,7 @@ export function paymentMiddleware(
 
     // Build payment requirements per x402 spec
     const paymentRequirements: PaymentRequirements = {
-      scheme: APTOS_SCHEME,
+      scheme: X402_SCHEME,
       network: network,
       maxAmountRequired: routeConfig.price,
       resource: request.url,
@@ -158,7 +158,7 @@ export function paymentMiddleware(
         );
       }
 
-      if (paymentPayload.scheme !== APTOS_SCHEME) {
+      if (paymentPayload.scheme !== X402_SCHEME) {
         console.error(`[x402 Middleware] ❌ Unsupported scheme: ${paymentPayload.scheme}`);
         return NextResponse.json(
           { error: `Unsupported payment scheme: ${paymentPayload.scheme}` },

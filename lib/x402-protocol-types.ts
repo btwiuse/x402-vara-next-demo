@@ -140,10 +140,14 @@ export interface PaymentResponseHeader {
 
 // Constants
 export const X402_VERSION = 1;
-export const APTOS_SCHEME = "exact";
+export const X402_SCHEME = "exact";
 
 // Aptos-specific network identifiers
 export const APTOS_MAINNET = "aptos-mainnet";
 export const APTOS_TESTNET = "aptos-testnet";
 export const APTOS_DEVNET = "aptos-devnet";
+
+// Vara-specific network identifiers
+export const VARA_MAINNET = "vara";
+export const VARA_TESTNET = "vara-testnet";
 

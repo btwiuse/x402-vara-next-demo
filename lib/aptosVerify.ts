@@ -5,7 +5,7 @@ import type {
   VerifyResponse,
   PaymentPayload,
 } from "@/lib/x402-protocol-types";
-import { X402_VERSION, APTOS_SCHEME, APTOS_TESTNET, APTOS_MAINNET, APTOS_DEVNET } from "@/lib/x402-protocol-types";
+import { X402_VERSION, X402_SCHEME, APTOS_TESTNET, APTOS_MAINNET, APTOS_DEVNET } from "@/lib/x402-protocol-types";
 
 export const dynamic = "force-dynamic";
 
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate scheme
-    if (paymentRequirements.scheme !== APTOS_SCHEME) {
+    if (paymentRequirements.scheme !== X402_SCHEME) {
       console.error(`[Facilitator Verify] ❌ Unsupported scheme: ${paymentRequirements.scheme}`);
       const response: VerifyResponse = {
         isValid: false,

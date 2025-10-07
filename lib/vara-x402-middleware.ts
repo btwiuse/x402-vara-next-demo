@@ -15,7 +15,7 @@ import type {
   SettleRequest,
   SettleResponse,
 } from "./x402-protocol-types";
-import { X402_VERSION, X402_SCHEME, APTOS_TESTNET, APTOS_MAINNET } from "./x402-protocol-types";
+import { X402_VERSION, X402_SCHEME, VARA_TESTNET, VARA_MAINNET } from "./x402-protocol-types";
 
 export function paymentMiddleware(
   recipientAddress: string,
@@ -43,10 +43,10 @@ export function paymentMiddleware(
     // Map simple network names to full Aptos network identifiers
     const simpleNetwork = routeConfig.network || "testnet";
     const network = simpleNetwork === "mainnet" 
-      ? APTOS_MAINNET 
+      ? VARA_MAINNET 
       : simpleNetwork === "testnet" 
-      ? APTOS_TESTNET 
-      : `aptos-${simpleNetwork}`;
+      ? VARA_TESTNET 
+      : `vara-${simpleNetwork}`;
     
     const facilitatorUrl = facilitatorConfig.url;
 

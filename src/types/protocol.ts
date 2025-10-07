@@ -146,7 +146,7 @@ export interface PaymentResponseHeader {
 
 // Constants
 export const X402_VERSION = 1;
-export const APTOS_SCHEME = "exact";
+export const X402_SCHEME = "exact";
 
 // Aptos-specific network identifiers
 export const APTOS_MAINNET = "aptos-mainnet";

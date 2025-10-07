@@ -5,7 +5,7 @@ import type {
   SettleResponse,
   PaymentPayload,
 } from "@/lib/x402-protocol-types";
-import { X402_VERSION, APTOS_SCHEME, APTOS_TESTNET, APTOS_MAINNET, APTOS_DEVNET } from "@/lib/x402-protocol-types";
+import { X402_VERSION, X402_SCHEME, APTOS_TESTNET, APTOS_MAINNET, APTOS_DEVNET } from "@/lib/x402-protocol-types";
 import { SimpleTransaction, AccountAuthenticator, Deserializer } from "@aptos-labs/ts-sdk";
 
 export const dynamic = "force-dynamic";
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate scheme
-    if (paymentRequirements.scheme !== APTOS_SCHEME) {
+    if (paymentRequirements.scheme !== X402_SCHEME) {
       console.error(`[Facilitator Settle] ❌ Unsupported scheme: ${paymentRequirements.scheme}`);
       const response: SettleResponse = {
         success: false,

@@ -18,7 +18,7 @@ export type {
 
 export {
   X402_VERSION,
-  APTOS_SCHEME,
+  X402_SCHEME,
   APTOS_MAINNET,
   APTOS_TESTNET,
   APTOS_DEVNET,
