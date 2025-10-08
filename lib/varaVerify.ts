@@ -176,6 +176,7 @@ export async function POST(request: NextRequest) {
 
     if (!result.isValid) {
       console.error(`[Facilitator Verify] ❌ Signature verification failed:`, result.invalidReason);
+      console.error(`[Facilitator Verify] ❌ api.isConnected:`, api.isConnected);
       const response: VerifyResponse = {
 	isValid: false,
 	invalidReason: result.invalidReason,

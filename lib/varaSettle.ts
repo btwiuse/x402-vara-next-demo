@@ -195,7 +195,8 @@ export async function POST(request: NextRequest) {
     }, settleOptions);
 
     if (!result.success) {
-      console.error(`[Facilitator Settle] ❌ Signature verification failed:`, result.message);
+      console.error(`[Facilitator Settle] ❌ Submit transaction failed:`, result.message);
+      console.error(`[Facilitator Settle] ❌ api.isConnected:`, api.isConnected);
       const response: SettleResponse = {
 	success: false,
 	error: result.message,
