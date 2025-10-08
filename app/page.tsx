@@ -3,6 +3,16 @@
 import { useState } from "react";
 import { varaPaymentHeader } from '@/lib/varaPaymentHeader';
 import { PaymentRequiredResponse } from '@/lib/x402-protocol-types';
+import { formatBalance } from '@polkadot/util';
+
+const formatBalanceDisplay = (balance) => {
+  if (!balance) return "N/A";
+  return formatBalance(balance, {
+    decimals: 12,
+    withSi: true,
+    withUnit: "VARA",
+  });
+}
 
 export default function Home() {
   const [loading, setLoading] = useState(false);
@@ -120,7 +130,7 @@ export default function Home() {
           <h1 className="text-4xl font-bold text-black mb-2">
             x402 Payment Protocol Demo
           </h1>
-          <p className="text-gray-700">HTTP 402 on Aptos Blockchain</p>
+          <p className="text-gray-700">HTTP 402 on Vara Network</p>
         </div>
 
         {/* Two Column Layout */}
@@ -231,7 +241,7 @@ export default function Home() {
                     {paymentDetails.accepts?.[0] ? (
                       <>
                         <p className="text-gray-700">
-                          <strong>Amount:</strong> {paymentDetails.accepts[0].maxAmountRequired} Octas
+                          <strong>Amount:</strong> {formatBalanceDisplay(paymentDetails.accepts[0].maxAmountRequired)}
                         </p>
                         <p className="text-gray-700">
                           <strong>Recipient:</strong> {paymentDetails.accepts[0].payTo?.slice(0, 10)}...
