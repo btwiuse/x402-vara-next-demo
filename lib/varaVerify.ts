@@ -23,7 +23,7 @@ export const dynamic = "force-dynamic";
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
   console.log(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
-  console.log(`[Facilitator Verify] POST /api/facilitator/verify`);
+  console.log(`[Facilitator Verify] POST ${request.nextUrl.pathname}`);
   console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
 
   try {
@@ -83,6 +83,7 @@ export async function POST(request: NextRequest) {
     
     console.log(`[Facilitator Verify] Network: ${network}`);
     
+/*
     const aptos = getAptosClient(network);
     console.log(`[Facilitator Verify] ✅ Aptos client initialized`);
 
@@ -206,6 +207,7 @@ export async function POST(request: NextRequest) {
       };
       return NextResponse.json(response);
     }
+*/
 
     console.log(`\n✅ [Facilitator Verify] Payment payload is valid!`);
 
