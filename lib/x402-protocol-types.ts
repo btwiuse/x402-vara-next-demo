@@ -146,8 +146,9 @@ export const X402_SCHEME = "exact";
 export const APTOS_MAINNET = "aptos-mainnet";
 export const APTOS_TESTNET = "aptos-testnet";
 export const APTOS_DEVNET = "aptos-devnet";
+export const validAptosNetworks = [APTOS_TESTNET, APTOS_MAINNET, APTOS_DEVNET];
 
 // Vara-specific network identifiers
 export const VARA_MAINNET = "vara";
 export const VARA_TESTNET = "vara-testnet";
-
+export const validVaraNetworks = [VARA_TESTNET, VARA_MAINNET];

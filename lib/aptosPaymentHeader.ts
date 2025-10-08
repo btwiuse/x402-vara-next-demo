@@ -12,6 +12,9 @@ const DEMO_PRIVATE_KEY = process.env.NEXT_PUBLIC_DEMO_PRIVATE_KEY ||
   "0x21c31d63f7719d3de90b9c14b264229db65609f11f86413cb81a7ed7fcb18f3f";
 
 export async function aptosPaymentHeader(paymentDetails: PaymentRequiredResponse) {
+  // Parse the 402 response which should contain accepts array per x402 spec
+  const paymentReqs = paymentDetails.accepts?.[0] || paymentDetails;
+
   // Initialize Aptos client
   const config = new AptosConfig({ network: Network.TESTNET });
   const aptos = new Aptos(config);
@@ -19,9 +22,6 @@ export async function aptosPaymentHeader(paymentDetails: PaymentRequiredResponse
   // Create account from hardcoded private key
   const privateKey = new Ed25519PrivateKey(DEMO_PRIVATE_KEY);
   const account = Account.fromPrivateKey({ privateKey });
-
-  // Parse the 402 response which should contain accepts array per x402 spec
-  const paymentReqs = paymentDetails.accepts?.[0] || paymentDetails;
 
   // Build transaction
   const transaction = await aptos.transaction.build.simple({

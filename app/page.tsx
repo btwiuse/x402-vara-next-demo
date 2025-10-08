@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { aptosPaymentHeader } from '@/lib/aptosPaymentHeader';
+import { varaPaymentHeader } from '@/lib/varaPaymentHeader';
 import { PaymentRequiredResponse } from '@/lib/x402-protocol-types';
 
 export default function Home() {
@@ -59,7 +59,7 @@ export default function Home() {
         throw new Error("No payment details available");
       }
 
-      const paymentHeader = await aptosPaymentHeader(paymentDetails);
+      const paymentHeader = await varaPaymentHeader(paymentDetails);
 
       // Make request with X-PAYMENT header (per x402 spec)
       const requestHeaders = {
@@ -252,7 +252,7 @@ export default function Home() {
 
                 <button
                   onClick={requestWithPayment}
-                  disabled={loading || !paymentDetails.accepts?.[0]}
+                  disabled={loading || !paymentDetails?.accepts?.[0]}
                   className="w-full bg-black text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? "Processing Payment..." : "Send Payment & Retry →"}
