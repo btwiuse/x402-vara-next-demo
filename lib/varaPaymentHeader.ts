@@ -1,6 +1,6 @@
-import { PaymentRequiredResponse } from '../src/types/protocol';
-import { signWithKeypair, createUnsignedTransaction } from 'x402-vara/client';
-import { useApi } from 'x402-vara/utils';
+import { PaymentRequiredResponse, PaymentPayload } from '@/lib/x402-protocol-types';
+import { signWithKeypair } from 'x402-vara/client';
+import { useApi, createUnsignedTransaction } from 'x402-vara/utils';
 import { Keyring } from "@polkadot/keyring";
 import { hexToU8a } from '@polkadot/util'
 
@@ -37,7 +37,7 @@ export async function varaPaymentHeader(paymentDetails: PaymentRequiredResponse)
   console.log("Transaction and signature:", signedTxPayload);
 
   // Create x402 PaymentPayload per official spec
-  const paymentPayload = {
+  const paymentPayload : PaymentPayload = {
     x402Version: 1,
     scheme: "exact",
     network: paymentReqs.network || "vara-testnet",

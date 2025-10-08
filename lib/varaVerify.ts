@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAptosClient } from "@/lib/aptos-utils";
 import type {
   VerifyRequest,
   VerifyResponse,
   PaymentPayload,
 } from "@/lib/x402-protocol-types";
 import { X402_VERSION, X402_SCHEME, validVaraNetworks } from "@/lib/x402-protocol-types";
+import { useApi } from "x402-vara/utils";
+import { verifyWithApi } from "x402-vara/server";
 
 export const dynamic = "force-dynamic";
 
@@ -70,24 +71,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(response);
     }
 
-    // Validate network is Aptos-specific
+    // Validate network is Vara-specific
     const network = paymentRequirements.network;
     if (!network || !validVaraNetworks.includes(network)) {
-      console.error(`[Facilitator Verify] ❌ Invalid Aptos network: ${network}`);
+      console.error(`[Facilitator Verify] ❌ Invalid Vara network: ${network}`);
       const response: VerifyResponse = {
         isValid: false,
-        invalidReason: `Invalid Aptos network: ${network}. Expected one of ${validVaraNetworks}`,
+        invalidReason: `Invalid Vara network: ${network}. Expected one of ${validVaraNetworks}`,
       };
       return NextResponse.json(response);
     }
     
     console.log(`[Facilitator Verify] Network: ${network}`);
     
-/*
-    const aptos = getAptosClient(network);
-    console.log(`[Facilitator Verify] ✅ Aptos client initialized`);
-
-    console.log(`\n🔍 [Facilitator Verify] Verifying payment payload...`);
+    const api = await useApi(network);
+    console.log(`[Facilitator Verify] ✅ Vara api initialized`);
 
     // Parse the payment header (base64 encoded PaymentPayload)
     console.log(`[Facilitator Verify] 📥 Raw paymentHeader (first 100 chars):`, paymentHeader.substring(0, 100) + '...');
@@ -145,19 +143,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(response);
     }
 
-    // For Aptos scheme, the payload contains signature and transaction separately (like Sui)
+    const signature = paymentPayload.payload.signature;
+    const transaction = paymentPayload.payload.transaction;
+    
+    // For Vara scheme, the payload contains signature and transaction separately
     console.log(`\n🔍 [Facilitator Verify] Extracting signature and transaction...`);
-    console.log(`[Facilitator Verify] payload.signature exists:`, !!paymentPayload.payload.signature);
-    console.log(`[Facilitator Verify] payload.transaction exists:`, !!paymentPayload.payload.transaction);
+    console.log(`[Facilitator Verify] payload.signature exists:`, !!signature);
+    console.log(`[Facilitator Verify] payload.transaction exists:`, !!transaction);
     
-    const signatureBase64 = paymentPayload.payload.signature;
-    const transactionBase64 = paymentPayload.payload.transaction;
-    
-    if (!signatureBase64 || !transactionBase64) {
+    if (!signature || !transaction) {
       console.error(`[Facilitator Verify] ❌ Missing signature or transaction`);
-      console.error(`[Facilitator Verify] Signature:`, signatureBase64 ? 'present' : 'MISSING');
-      console.error(`[Facilitator Verify] Transaction:`, transactionBase64 ? 'present' : 'MISSING');
-      console.error(`[Facilitator Verify] Full payload object:`, JSON.stringify(paymentPayload.payload, null, 2));
+      console.error(`[Facilitator Verify] Signature:`, signature ? 'present' : 'MISSING');
+      console.error(`[Facilitator Verify] Transaction:`, transaction ? 'present' : 'MISSING');
       const response: VerifyResponse = {
         isValid: false,
         invalidReason: "Invalid payload: missing signature or transaction",
@@ -165,49 +162,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(response);
     }
 
-    console.log(`[Facilitator Verify] ✅ Signature base64 length: ${signatureBase64.length}`);
-    console.log(`[Facilitator Verify] ✅ Transaction base64 length: ${transactionBase64.length}`);
-    console.log(`[Facilitator Verify] Signature (first 50 chars):`, signatureBase64.substring(0, 50) + '...');
-    console.log(`[Facilitator Verify] Transaction (first 50 chars):`, transactionBase64.substring(0, 50) + '...');
-    
-    // Decode the BCS components
-    console.log(`\n🔍 [Facilitator Verify] Decoding BCS components...`);
-    try {
-      const signatureBytes = Buffer.from(signatureBase64, 'base64');
-      const transactionBytes = Buffer.from(transactionBase64, 'base64');
-      
-      console.log(`[Facilitator Verify] ✅ Signature decoded: ${signatureBytes.length} BCS bytes`);
-      console.log(`[Facilitator Verify] ✅ Transaction decoded: ${transactionBytes.length} BCS bytes`);
-      console.log(`[Facilitator Verify] Signature bytes (first 20):`, Array.from(signatureBytes.slice(0, 20)).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' '));
-      console.log(`[Facilitator Verify] Transaction bytes (first 20):`, Array.from(transactionBytes.slice(0, 20)).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' '));
-      
-      // TODO: Implement proper BCS deserialization and validation
-      // For now, we perform basic validation:
-      // - Check both are valid base64 and have content
-      // - In production, should deserialize BCS and verify:
-      //   - Transaction signature is valid
-      //   - Recipient matches paymentRequirements.payTo
-      //   - Amount matches paymentRequirements.maxAmountRequired
-      
-      if (signatureBytes.length === 0 || transactionBytes.length === 0) {
-        console.error(`[Facilitator Verify] ❌ Empty signature or transaction data`);
-        const response: VerifyResponse = {
-          isValid: false,
-          invalidReason: "Empty signature or transaction data",
-        };
-        return NextResponse.json(response);
-      }
-      
-      console.log(`[Facilitator Verify] ✅ Transaction and signature have valid BCS data`);
-    } catch (decodeError) {
-      console.error(`[Facilitator Verify] ❌ Failed to decode BCS:`, decodeError);
+    // TODO:
+    // - verify tx amount matches maxRequiredAmount
+    // - verify tx recipient matches payTo
+
+    // verify tx signature
+    const result = await verifyWithApi(api)({
+      unsignedTransaction: transaction,
+      signature,
+      signer: transaction.address,
+      network,
+    });
+
+    if (!result.isValid) {
+      console.error(`[Facilitator Verify] ❌ Signature verification failed:`, result.invalidReason);
       const response: VerifyResponse = {
-        isValid: false,
-        invalidReason: "Invalid base64 encoding in signature or transaction",
+	isValid: false,
+	invalidReason: result.invalidReason,
       };
       return NextResponse.json(response);
     }
-*/
 
     console.log(`\n✅ [Facilitator Verify] Payment payload is valid!`);
 

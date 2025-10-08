@@ -70,7 +70,7 @@ export interface PaymentPayload {
     /** Base64 encoded BCS signature (AccountAuthenticator) */
     signature: string;
     /** Base64 encoded BCS transaction (RawTransaction) */
-    transaction: string;
+    transaction: any;
   };
 }
 
