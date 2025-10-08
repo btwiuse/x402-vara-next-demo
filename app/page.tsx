@@ -5,7 +5,7 @@ import { varaPaymentHeader } from '@/lib/varaPaymentHeader';
 import { PaymentRequiredResponse } from '@/lib/x402-protocol-types';
 import { formatBalance } from '@polkadot/util';
 
-const formatBalanceDisplay = (balance) => {
+const formatBalanceDisplay = (balance: string | undefined) => {
   if (!balance) return "N/A";
   return formatBalance(balance, {
     decimals: 12,
