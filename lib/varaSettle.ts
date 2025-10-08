@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAptosClient } from "@/lib/aptos-utils";
 import type {
   SettleRequest,
   SettleResponse,
   PaymentPayload,
 } from "@/lib/x402-protocol-types";
-import { X402_VERSION, X402_SCHEME, APTOS_TESTNET, APTOS_MAINNET, APTOS_DEVNET } from "@/lib/x402-protocol-types";
-import { SimpleTransaction, AccountAuthenticator, Deserializer } from "@aptos-labs/ts-sdk";
+import { X402_VERSION, X402_SCHEME, validVaraNetworks } from "@/lib/x402-protocol-types";
+import { useApi } from "x402-vara/utils";
+import { settleWithApi } from "x402-vara/server";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +25,7 @@ export const dynamic = "force-dynamic";
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
   console.log(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
-  console.log(`[Facilitator Settle] POST /api/facilitator/settle`);
+  console.log(`[Facilitator Verify] POST ${request.nextUrl.pathname}`);
   console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
 
   try {
@@ -76,30 +76,41 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(response);
     }
 
-    const network = paymentRequirements.network || "testnet";
-    console.log(`[Facilitator Settle] Network: ${network}`);
+    // Validate network is Vara-specific
+    const network = paymentRequirements.network;
+    if (!network || !validVaraNetworks.includes(network)) {
+      console.error(`[Facilitator Settle] ❌ Invalid Vara network: ${network}`);
+      const response: SettleResponse = {
+        success: false,
+        error: `Invalid Vara network: ${network}. Expected one of ${validVaraNetworks}`,
+        txHash: null,
+        networkId: null,
+      };
+      return NextResponse.json(response);
+    }
     
-/*
-    const aptos = getAptosClient(network);
-    console.log(`[Facilitator Settle] ✅ Aptos client initialized`);
+    console.log(`[Facilitator Settle] Network: ${network}`);
+
+    const api = await useApi(network);
+    console.log(`[Facilitator Settle] ✅ Vara api initialized`);
 
     // Parse the payment header (base64 encoded PaymentPayload)
-    console.log(`[Facilitator Settle] 📥 Parsing payment payload...`);
-    console.log(`[Facilitator Settle] Raw paymentHeader (first 100 chars):`, paymentHeader.substring(0, 100) + '...');
+    console.log(`[Facilitator Settle] 📥 Raw paymentHeader (first 100 chars):`, paymentHeader.substring(0, 100) + '...');
+    console.log(`[Facilitator Settle] 📥 Raw paymentHeader length:`, paymentHeader.length);
     
     let paymentPayloadJson: string;
     try {
       paymentPayloadJson = Buffer.from(paymentHeader, 'base64').toString('utf-8');
       console.log(`[Facilitator Settle] 📝 Decoded JSON (first 300 chars):`, paymentPayloadJson.substring(0, 300) + '...');
     } catch (decodeError) {
-      console.error(`[Facilitator Settle] ❌ Failed to decode base64:`, decodeError);
+      console.error(`[Facilitator Settle] ❌ Failed to decode base64 header:`, decodeError);
       const response: SettleResponse = {
         success: false,
-        error: "Invalid base64 encoding",
+        error: `Invalid Vara network: ${network}. Expected one of ${validVaraNetworks}`,
         txHash: null,
         networkId: null,
       };
-      return NextResponse.json(response, { status: 400 });
+      return NextResponse.json(response);
     }
     
     let paymentPayload: PaymentPayload;
@@ -107,30 +118,58 @@ export async function POST(request: NextRequest) {
       paymentPayload = JSON.parse(paymentPayloadJson);
       console.log(`[Facilitator Settle] ✅ Parsed JSON successfully`);
     } catch (parseError) {
-      console.error(`[Facilitator Settle] ❌ Failed to parse JSON:`, parseError);
+      console.error(`[Facilitator Verify] ❌ Failed to parse JSON:`, parseError);
       const response: SettleResponse = {
         success: false,
-        error: "Invalid JSON",
+        error: "Invalid JSON in payment payload",
         txHash: null,
         networkId: null,
       };
-      return NextResponse.json(response, { status: 400 });
+      return NextResponse.json(response);
     }
     
-    console.log(`[Facilitator Settle] ✅ Parsed payment payload`);
-    console.log(`[Facilitator Settle] Scheme: ${paymentPayload.scheme}`);
-    console.log(`[Facilitator Settle] Network: ${paymentPayload.network}`);
-    console.log(`[Facilitator Settle] Payload keys:`, Object.keys(paymentPayload.payload));
+    console.log(`[Facilitator Settle] Parsed payment payload:`, {
+      x402Version: paymentPayload.x402Version,
+      scheme: paymentPayload.scheme,
+      network: paymentPayload.network,
+      hasPayload: !!paymentPayload.payload,
+      payloadType: typeof paymentPayload.payload,
+      payloadKeys: paymentPayload.payload ? Object.keys(paymentPayload.payload) : [],
+    });
 
-    // Extract signature and transaction separately (like Sui)
-    console.log(`\n🔍 [Facilitator Settle] Extracting signature and transaction...`);
-    const signatureBase64 = paymentPayload.payload.signature;
-    const transactionBase64 = paymentPayload.payload.transaction;
+    // Validate payment payload matches requirements
+    if (paymentPayload.scheme !== paymentRequirements.scheme) {
+      const response: SettleResponse = {
+        success: false,
+        error: `Scheme mismatch: expected ${paymentRequirements.scheme}, got ${paymentPayload.scheme}`,
+        txHash: null,
+        networkId: null,
+      };
+      return NextResponse.json(response);
+    }
+
+    if (paymentPayload.network !== paymentRequirements.network) {
+      const response: SettleResponse = {
+        success: false,
+        error: `Network mismatch: expected ${paymentRequirements.network}, got ${paymentPayload.network}`,
+        txHash: null,
+        networkId: null,
+      };
+      return NextResponse.json(response);
+    }
+
+    const signature = paymentPayload.payload.signature;
+    const transaction = paymentPayload.payload.transaction;
     
-    if (!signatureBase64 || !transactionBase64) {
+    // For Vara scheme, the payload contains signature and transaction separately
+    console.log(`\n🔍 [Facilitator Settle] Extracting signature and transaction...`);
+    console.log(`[Facilitator Settle] payload.signature exists:`, !!signature);
+    console.log(`[Facilitator Settle] payload.transaction exists:`, !!transaction);
+    
+    if (!signature || !transaction) {
       console.error(`[Facilitator Settle] ❌ Missing signature or transaction`);
-      console.error(`[Facilitator Settle] Signature:`, signatureBase64 ? 'present' : 'MISSING');
-      console.error(`[Facilitator Settle] Transaction:`, transactionBase64 ? 'present' : 'MISSING');
+      console.error(`[Facilitator Settle] Signature:`, signature ? 'present' : 'MISSING');
+      console.error(`[Facilitator Settle] Transaction:`, transaction ? 'present' : 'MISSING');
       const response: SettleResponse = {
         success: false,
         error: "Invalid payload: missing signature or transaction",
@@ -140,118 +179,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(response);
     }
 
-    console.log(`[Facilitator Settle] ✅ Signature base64 length: ${signatureBase64.length}`);
-    console.log(`[Facilitator Settle] ✅ Transaction base64 length: ${transactionBase64.length}`);
-    console.log(`[Facilitator Settle] Signature (first 50):`, signatureBase64.substring(0, 50) + '...');
-    console.log(`[Facilitator Settle] Transaction (first 50):`, transactionBase64.substring(0, 50) + '...');
-    
-    console.log(`\n📤 [Facilitator Settle] Submitting signed transaction to blockchain...`);
-    
-    // Decode the BCS bytes
-    let signatureBytes: Buffer;
-    let transactionBytes: Buffer;
-    try {
-      signatureBytes = Buffer.from(signatureBase64, 'base64');
-      transactionBytes = Buffer.from(transactionBase64, 'base64');
-      
-      console.log(`[Facilitator Settle] ✅ Signature decoded: ${signatureBytes.length} BCS bytes`);
-      console.log(`[Facilitator Settle] ✅ Transaction decoded: ${transactionBytes.length} BCS bytes`);
-      console.log(`[Facilitator Settle] Signature bytes (first 20):`, Array.from(signatureBytes.slice(0, 20)).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' '));
-      console.log(`[Facilitator Settle] Transaction bytes (first 20):`, Array.from(transactionBytes.slice(0, 20)).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' '));
-    } catch (decodeError) {
-      console.error(`[Facilitator Settle] ❌ Failed to decode base64:`, decodeError);
+    // TODO:
+    // - verify tx amount matches maxRequiredAmount
+    // - verify tx recipient matches payTo
+
+    // settle tx
+    const settleOptions = {
+      waitForFinalization: false,
+    };
+    const result = await settleWithApi(api)({
+      unsignedTransaction: transaction,
+      signature,
+      signer: transaction.address,
+      network,
+    }, settleOptions);
+
+    if (!result.success) {
+      console.error(`[Facilitator Settle] ❌ Signature verification failed:`, result.message);
       const response: SettleResponse = {
-        success: false,
-        error: "Invalid base64 encoding",
+	success: false,
+	error: result.message,
         txHash: null,
         networkId: null,
       };
       return NextResponse.json(response);
     }
-    
-    // Deserialize BCS bytes back into SDK objects (per official Aptos SDK docs)
-    console.log(`\n🔄 [Facilitator Settle] Deserializing BCS back to SDK objects...`);
-    let transaction: SimpleTransaction;
-    let senderAuthenticator: AccountAuthenticator;
-    
-    try {
-      // Deserialize the RawTransaction from BCS
-      const txDeserializer = new Deserializer(transactionBytes);
-      transaction = SimpleTransaction.deserialize(txDeserializer);
-      console.log(`[Facilitator Settle] ✅ Deserialized transaction object`);
-      
-      // Deserialize the AccountAuthenticator from BCS
-      const authDeserializer = new Deserializer(signatureBytes);
-      senderAuthenticator = AccountAuthenticator.deserialize(authDeserializer);
-      console.log(`[Facilitator Settle] ✅ Deserialized authenticator object`);
-    } catch (deserializeError: any) {
-      console.error(`[Facilitator Settle] ❌ Failed to deserialize BCS:`, deserializeError);
-      const settleResponse: SettleResponse = {
-        success: false,
-        error: `BCS deserialization failed: ${deserializeError.message}`,
-        txHash: null,
-        networkId: null,
-      };
-      return NextResponse.json(settleResponse, { status: 400 });
-    }
-    
-    // Submit using SDK's proper method (Pattern A from official Aptos SDK docs)
-    console.log(`\n📤 [Facilitator Settle] Submitting via SDK submit.simple()...`);
-    
-    let pendingTx;
-    try {
-      const committed = await aptos.transaction.submit.simple({
-        transaction,
-        senderAuthenticator,
-      });
-      
-      pendingTx = { hash: committed.hash };
-      console.log(`[Facilitator Settle] ✅ Transaction submitted!`);
-      console.log(`[Facilitator Settle] Transaction hash: ${pendingTx.hash}`);
-    } catch (submitError: any) {
-      console.error(`[Facilitator Settle] ❌ Submission failed:`, submitError);
-      const settleResponse: SettleResponse = {
-        success: false,
-        error: submitError.message || String(submitError),
-        txHash: null,
-        networkId: null,
-      };
-      return NextResponse.json(settleResponse, { status: 500 });
-    }
 
-    console.log(`\n⏳ [Facilitator Settle] Waiting for blockchain confirmation...`);
-    
-    // Wait for transaction to be confirmed (per x402 spec)
-    await aptos.waitForTransaction({ 
-      transactionHash: pendingTx.hash 
-    });
+    console.log(`\n✅ [Facilitator Settle] Payment payload is settled!`);
 
-    console.log(`[Facilitator Settle] ✅ Transaction confirmed!`);
-
-    // Check if transaction succeeded
-    console.log(`[Facilitator Settle] Fetching transaction details...`);
-    const txDetails = await aptos.transaction.getTransactionByHash({
-      transactionHash: pendingTx.hash,
-    });
-
-    console.log(`[Facilitator Settle] Transaction details:`, {
-      hasSuccess: 'success' in txDetails,
-      success: 'success' in txDetails ? txDetails.success : 'N/A',
-      type: txDetails.type,
-    });
-
-    if (!('success' in txDetails) || !txDetails.success) {
-      console.error(`[Facilitator Settle] ❌ Transaction FAILED on blockchain`);
-      const settleResponse: SettleResponse = {
-        success: false,
-        error: "Transaction failed on blockchain",
-        txHash: pendingTx.hash,
-        networkId: network,
-      };
-      return NextResponse.json(settleResponse);
-    }
-*/
-    let pendingTx = {hash: "0xTODO"};
+    let pendingTx = {hash: result.txHash};
 
     console.log(`\n✅ [Facilitator Settle] Payment settled successfully!`);
     console.log(`[Facilitator Settle] Transaction hash: ${pendingTx.hash}`);
