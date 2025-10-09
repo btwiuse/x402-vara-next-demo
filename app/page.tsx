@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { varaPaymentHeader } from '@/lib/varaPaymentHeader';
-import { PaymentRequiredResponse } from '@/lib/x402-protocol-types';
+import { PaymentRequiredResponse, PaymentRequirements } from '@/lib/x402-protocol-types';
 import { formatBalance } from '@polkadot/util';
 
 const formatBalanceDisplay = (balance: string | undefined) => {
@@ -14,12 +14,77 @@ const formatBalanceDisplay = (balance: string | undefined) => {
   });
 }
 
+const PaymentDetailsCard = ({ accept }: { accept: PaymentRequirements }) => {
+  const { maxAmountRequired, payTo, scheme } = accept || {};
+
+  return (
+    <div className="text-sm">
+      <p className="text-gray-700">
+        <strong>Amount:</strong> {formatBalanceDisplay(maxAmountRequired)}
+      </p>
+      <p className="text-gray-700">
+        <strong>Recipient:</strong> {payTo ? `${payTo.slice(0, 10)}...` : "N/A"}
+      </p>
+      <p className="text-gray-700">
+        <strong>Scheme:</strong> {scheme || "N/A"}
+      </p>
+    </div>
+  );
+};
+
+const PaymentDetailsList = ({
+  paymentDetails,
+  selectedIndex,
+  setSelectedIndex
+}: {
+  paymentDetails: PaymentRequiredResponse | null;
+  selectedIndex: number;
+  setSelectedIndex: (index: number) => void;
+}) => {
+  if (!paymentDetails?.accepts?.length) {
+    return (
+      <div className="mb-4 p-3 bg-white border border-gray-300 rounded text-sm">
+        <p className="text-gray-700">
+          <strong>Error:</strong> no payment requirements found
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {paymentDetails.accepts.map((accept, index) => (
+        <label
+          key={index}
+          className={`flex items-start gap-3 p-3 border rounded cursor-pointer transition ${
+            selectedIndex === index
+              ? "border-blue-500 bg-blue-50"
+              : "border-gray-300 bg-white hover:bg-gray-50"
+          }`}
+        >
+          <input
+            type="radio"
+            name="paymentOption"
+            checked={selectedIndex === index}
+            onChange={() => setSelectedIndex(index)}
+            className="mt-1"
+          />
+          <div className="flex-1">
+            <PaymentDetailsCard accept={accept} />
+          </div>
+        </label>
+      ))}
+    </div>
+  );
+};
+
 export default function Home() {
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<any>(null);
   const [step, setStep] = useState<"initial" | "payment-required" | "success">("initial");
   const [paymentDetails, setPaymentDetails] = useState<PaymentRequiredResponse | null>(null);
   const [timing, setTiming] = useState<any>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number>(0);
 
   const requestWithoutPayment = async () => {
     setLoading(true);
@@ -69,7 +134,7 @@ export default function Home() {
         throw new Error("No payment details available");
       }
 
-      const paymentHeader = await varaPaymentHeader(paymentDetails);
+      const paymentHeader = await varaPaymentHeader(paymentDetails, selectedIndex);
 
       // Make request with X-PAYMENT header (per x402 spec)
       const requestHeaders = {
@@ -238,31 +303,17 @@ export default function Home() {
                 
                 {paymentDetails && (
                   <div className="mb-4 p-3 bg-white border border-gray-300 rounded text-sm">
-                    {paymentDetails.accepts?.[0] ? (
-                      <>
-                        <p className="text-gray-700">
-                          <strong>Amount:</strong> {formatBalanceDisplay(paymentDetails.accepts[0].maxAmountRequired)}
-                        </p>
-                        <p className="text-gray-700">
-                          <strong>Recipient:</strong> {paymentDetails.accepts[0].payTo?.slice(0, 10)}...
-                        </p>
-                        <p className="text-gray-700">
-                          <strong>Scheme:</strong> {paymentDetails.accepts[0].scheme}
-                        </p>
-                      </>
-                    ) : (
-                      <>
-                        <p className="text-gray-700">
-                          <strong>Error:</strong> no payment requirements found
-                        </p>
-                      </>
-                    )}
+		    <PaymentDetailsList
+		      paymentDetails={paymentDetails}
+		      selectedIndex={selectedIndex}
+		      setSelectedIndex={setSelectedIndex}
+		    />
                   </div>
                 )}
 
                 <button
                   onClick={requestWithPayment}
-                  disabled={loading || !paymentDetails?.accepts?.[0]}
+                  disabled={loading || !paymentDetails?.accepts?.length}
                   className="w-full bg-black text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? "Processing Payment..." : "Send Payment & Retry →"}

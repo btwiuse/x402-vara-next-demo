@@ -8,9 +8,9 @@ import { hexToU8a } from '@polkadot/util'
 const DEMO_PRIVATE_KEY = process.env.NEXT_PUBLIC_DEMO_PRIVATE_KEY ||
   "0xe5be9a5092b81bca64be81d212e7f2f9eba183bb7a90954f7b76361f6edb5c0a";
 
-export async function varaPaymentHeader(paymentDetails: PaymentRequiredResponse) {
+export async function varaPaymentHeader(paymentDetails: PaymentRequiredResponse, selectedIndex: number = 0) {
   // Parse the 402 response which should contain accepts array per x402 spec
-  const paymentReqs = paymentDetails.accepts?.[0] || paymentDetails;
+  const paymentReqs = paymentDetails.accepts?.[selectedIndex] || paymentDetails;
 
   // Initialize Aptos client
   const api = await useApi(paymentReqs.network);

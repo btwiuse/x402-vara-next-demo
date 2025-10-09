@@ -80,10 +80,10 @@ export interface PaymentPayload {
 export interface VerifyRequest {
   /** Version of the x402 payment protocol */
   x402Version: number;
-  
+
   /** The X-PAYMENT header value (base64 encoded PaymentPayload) */
   paymentHeader: string;
-  
+
   /** The payment requirements being verified against */
   paymentRequirements: PaymentRequirements;
 }

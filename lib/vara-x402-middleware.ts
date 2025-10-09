@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import type { RouteConfig, FacilitatorConfig } from "./x402-types";
+import type { RouteConfig, RouteConfigOrArray, FacilitatorConfig } from "./x402-types";
 import type {
   PaymentRequiredResponse,
   PaymentRequirements,
@@ -19,7 +19,7 @@ import { X402_VERSION, X402_SCHEME, VARA_TESTNET, VARA_MAINNET } from "./x402-pr
 
 export function paymentMiddleware(
   recipientAddress: string,
-  routes: Record<string, RouteConfig>,
+  routes: Record<string, RouteConfigOrArray>,
   facilitatorConfig: FacilitatorConfig
 ) {
   return async function middleware(request: NextRequest) {
@@ -30,30 +30,29 @@ export function paymentMiddleware(
     console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
     
     // Check if this route is protected
-    const routeConfig = routes[pathname];
-    if (!routeConfig) {
+    const routeConfigOrArray = routes[pathname];
+    if (!routeConfigOrArray) {
       console.log(`[x402 Middleware] Route not protected, passing through`);
       return NextResponse.next();
     }
 
     console.log(`[x402 Middleware] ✅ Route is protected`);
 
+    // Normalize to array for consistent processing
+    const routeConfigs = Array.isArray(routeConfigOrArray)
+      ? routeConfigOrArray
+      : [routeConfigOrArray];
+
     const paymentHeader = request.headers.get("X-PAYMENT");
-    
-    // Map simple network names to full Aptos network identifiers
-    const simpleNetwork = routeConfig.network || "testnet";
-    const network = simpleNetwork === "mainnet" 
-      ? VARA_MAINNET 
-      : simpleNetwork === "testnet" 
-      ? VARA_TESTNET 
-      : `vara-${simpleNetwork}`;
     
     const facilitatorUrl = facilitatorConfig.url;
 
     console.log(`[x402 Middleware] Configuration:`, {
       recipient: recipientAddress,
-      price: routeConfig.price,
-      network,
+      configs: routeConfigs.map(config => ({
+        price: config.price,
+        network: config.network || "testnet",
+      })),
       facilitator: facilitatorUrl,
       hasPayment: !!paymentHeader,
     });
@@ -67,19 +66,29 @@ export function paymentMiddleware(
       );
     }
 
-    // Build payment requirements per x402 spec
-    const paymentRequirements: PaymentRequirements = {
-      scheme: X402_SCHEME,
-      network: network,
-      maxAmountRequired: routeConfig.price,
-      resource: request.url,
-      description: routeConfig.config?.description || "Access to protected resource",
-      mimeType: routeConfig.config?.mimeType || "application/json",
-      outputSchema: routeConfig.config?.outputSchema || null,
-      payTo: recipientAddress,
-      maxTimeoutSeconds: routeConfig.config?.maxTimeoutSeconds || 60,
-      extra: null,
-    };
+    // Build payment requirements for each configuration per x402 spec
+    const paymentRequirements: PaymentRequirements[] = routeConfigs.map(routeConfig => {
+      // Map simple network names to full Aptos network identifiers
+      const simpleNetwork = routeConfig.network || "testnet";
+      const network = simpleNetwork === "mainnet"
+        ? VARA_MAINNET
+        : simpleNetwork === "testnet"
+        ? VARA_TESTNET
+        : `vara-${simpleNetwork}`;
+
+      return {
+        scheme: X402_SCHEME,
+        network: network,
+        maxAmountRequired: routeConfig.price,
+        resource: request.url,
+        description: routeConfig.config?.description || "Access to protected resource",
+        mimeType: routeConfig.config?.mimeType || "application/json",
+        outputSchema: routeConfig.config?.outputSchema || null,
+        payTo: recipientAddress,
+        maxTimeoutSeconds: routeConfig.config?.maxTimeoutSeconds || 60,
+        extra: null,
+      };
+    });
 
     // If no payment provided, return 402 with payment requirements per x402 spec
     if (!paymentHeader) {
@@ -87,7 +96,7 @@ export function paymentMiddleware(
       
       const response402: PaymentRequiredResponse = {
         x402Version: X402_VERSION,
-        accepts: [paymentRequirements],
+        accepts: paymentRequirements,
       };
       
       console.log(`[x402 Middleware] 402 Response (x402 spec):`, response402);
@@ -132,7 +141,7 @@ export function paymentMiddleware(
       const verifyRequest: VerifyRequest = {
         x402Version: X402_VERSION,
         paymentHeader: paymentHeader,
-        paymentRequirements: paymentRequirements,
+        paymentRequirements: paymentRequirements[0],
       };
       
       const verifyResponse = await fetch(`${facilitatorUrl}/verify`, {
@@ -170,7 +179,7 @@ export function paymentMiddleware(
       const settleRequest: SettleRequest = {
         x402Version: X402_VERSION,
         paymentHeader: paymentHeader,
-        paymentRequirements: paymentRequirements,
+        paymentRequirements: paymentRequirements[0],
       };
       
       const settleResponse = await fetch(`${facilitatorUrl}/settle`, {

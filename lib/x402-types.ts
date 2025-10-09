@@ -14,6 +14,8 @@ export type RouteConfig = {
   };
 };
 
+export type RouteConfigOrArray = RouteConfig | RouteConfig[];
+
 export type FacilitatorConfig = {
   url: string; // Required for public npm package
 };
