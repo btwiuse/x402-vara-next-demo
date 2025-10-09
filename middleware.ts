@@ -13,7 +13,7 @@ export const middleware = paymentMiddleware(
   process.env.PAYMENT_RECIPIENT_ADDRESS!,
   {
     "/api/protected/weather": {
-      price: "1000000",
+      price: "10000000000",
       network: "testnet",
       config: {
         description: "Access to weather data API",

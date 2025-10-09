@@ -1,26 +1,42 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { varaPaymentHeader } from '@/lib/varaPaymentHeader';
 import { PaymentRequiredResponse, PaymentRequirements } from '@/lib/x402-protocol-types';
 import { formatBalance } from '@polkadot/util';
+import { useApi } from 'x402-vara/utils';
 
-const formatBalanceDisplay = (balance: string | undefined) => {
+const formatBalanceDisplay = (balance: string | undefined, options: any = {}) => {
   if (!balance) return "N/A";
-  return formatBalance(balance, {
-    decimals: 12,
-    withSi: true,
-    withUnit: "VARA",
-  });
+  console.log(JSON.stringify({options}));
+  return formatBalance(balance, options);
 }
 
 const PaymentDetailsCard = ({ accept }: { accept: PaymentRequirements }) => {
-  const { maxAmountRequired, payTo, scheme } = accept || {};
+  const { network, maxAmountRequired, payTo, scheme } = accept;
+  const [formattedAmount, setFormattedAmount] = useState<string>("loading...");
+
+  useEffect(() => {
+    const fetchFormattedAmount = async () => {
+      const api = await useApi(network);
+      const formatOptions = {
+        decimals: api.registry.chainDecimals[0],
+        withSiFull: true,
+        withZero: false,
+        withUnit: api.registry.chainTokens[0],
+        forceUnit: '0',
+      };
+      const formatted = formatBalanceDisplay(maxAmountRequired, formatOptions);
+      setFormattedAmount(formatted);
+    };
+
+    fetchFormattedAmount();
+  }, [network, maxAmountRequired]);
 
   return (
     <div className="text-sm">
       <p className="text-gray-700">
-        <strong>Amount:</strong> {formatBalanceDisplay(maxAmountRequired)}
+        <strong>Amount:</strong> {formattedAmount}
       </p>
       <p className="text-gray-700">
         <strong>Recipient:</strong> {payTo ? `${payTo.slice(0, 10)}...` : "N/A"}
