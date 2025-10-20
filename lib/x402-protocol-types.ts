@@ -45,6 +45,9 @@ export interface PaymentRequirements {
   /** Address to pay value to */
   payTo: string;
   
+  /** Asset used for payment */
+  asset?: `0x${string}`;
+
   /** Maximum time in seconds for the resource server to respond */
   maxTimeoutSeconds: number;
   
@@ -65,6 +68,9 @@ export interface PaymentPayload {
   /** Network id of the accepted paymentRequirements */
   network: string;
   
+  /** Asset of the accepted paymentRequirements */
+  asset?: `0x${string}`;
+
   /** Scheme-dependent payload (for Aptos "exact" scheme: signature and transaction separately) */
   payload: {
     /** Base64 encoded BCS signature (AccountAuthenticator) */

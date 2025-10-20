@@ -5,12 +5,14 @@
 
 export type RouteConfig = {
   price: string;
+  asset?: `0x${string}`;
   network?: string;
   config?: {
     description?: string;
     mimeType?: string;
     outputSchema?: Record<string, any>;
     maxTimeoutSeconds?: number;
+    extra?: object;
   };
 };
 

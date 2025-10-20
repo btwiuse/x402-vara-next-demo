@@ -51,6 +51,7 @@ export function paymentMiddleware(
       recipient: recipientAddress,
       configs: routeConfigs.map(config => ({
         price: config.price,
+        asset: config.asset || null,
         network: config.network || "testnet",
       })),
       facilitator: facilitatorUrl,
@@ -85,8 +86,9 @@ export function paymentMiddleware(
         mimeType: routeConfig.config?.mimeType || "application/json",
         outputSchema: routeConfig.config?.outputSchema || null,
         payTo: recipientAddress,
+        asset: routeConfig.asset,
         maxTimeoutSeconds: routeConfig.config?.maxTimeoutSeconds || 60,
-        extra: null,
+        extra: routeConfig.config?.extra || null,
       };
     });
 
@@ -114,6 +116,7 @@ export function paymentMiddleware(
       console.log(`[x402 Middleware] Parsed payment payload:`, {
         x402Version: paymentPayload.x402Version,
         scheme: paymentPayload.scheme,
+        asset: paymentPayload.asset,
         network: paymentPayload.network,
       });
 
@@ -134,14 +137,30 @@ export function paymentMiddleware(
         );
       }
 
+      let paymentReqs: PaymentRequirements | undefined;
+      for (const p of paymentRequirements) {
+        if (p.asset == paymentPayload.asset) {
+          paymentReqs = p;
+          break;
+        }
+      }
+
+      if (!paymentReqs) {
+        console.error(`[x402 Middleware] ❌ Unsupported asset: ${paymentPayload.asset}`);
+        return NextResponse.json(
+          { error: `Unsupported payment asset: ${paymentPayload.asset}` },
+          { status: 400 }
+        );
+      }
+
       // Step 1: Verify payment (fast, no blockchain submission)
       console.log(`\n🔍 [x402 Middleware] STEP 1: Verifying payment`);
       console.log(`[x402 Middleware] Calling: ${facilitatorUrl}/verify`);
-      
+
       const verifyRequest: VerifyRequest = {
         x402Version: X402_VERSION,
         paymentHeader: paymentHeader,
-        paymentRequirements: paymentRequirements[0],
+        paymentRequirements: paymentReqs,
       };
       
       const verifyResponse = await fetch(`${facilitatorUrl}/verify`, {
@@ -179,7 +198,7 @@ export function paymentMiddleware(
       const settleRequest: SettleRequest = {
         x402Version: X402_VERSION,
         paymentHeader: paymentHeader,
-        paymentRequirements: paymentRequirements[0],
+        paymentRequirements: paymentReqs,
       };
       
       const settleResponse = await fetch(`${facilitatorUrl}/settle`, {

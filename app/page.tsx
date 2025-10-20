@@ -13,17 +13,19 @@ const formatBalanceDisplay = (balance: string | undefined, options: any = {}) =>
 }
 
 const PaymentDetailsCard = ({ accept }: { accept: PaymentRequirements }) => {
-  const { network, maxAmountRequired, payTo, scheme } = accept;
+  const { network, maxAmountRequired, payTo, scheme, asset, extra } = accept;
   const [formattedAmount, setFormattedAmount] = useState<string>("loading...");
 
   useEffect(() => {
     const fetchFormattedAmount = async () => {
       const api = await useApi(network);
+      const decimals = asset ? (extra as any)?.decimals : api.registry.chainDecimals[0];
+      const unit = asset ? (extra as any)?.name : api.registry.chainTokens[0];
       const formatOptions = {
-        decimals: api.registry.chainDecimals[0],
+        decimals,
         withSiFull: true,
         withZero: false,
-        withUnit: api.registry.chainTokens[0],
+        withUnit: unit,
         forceUnit: '0',
       };
       const formatted = formatBalanceDisplay(maxAmountRequired, formatOptions);
