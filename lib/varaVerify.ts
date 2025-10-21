@@ -10,6 +10,7 @@ import { verifyWithApi } from "x402-vara/server";
 import { hexToU8a, u8aToHex } from '@polkadot/util'
 import { decodeAddress } from '@polkadot/util-crypto'
 import { VftProgram } from '@/lib/vft'
+import { balanceOf } from '@/lib/vara-utils'
 
 export const dynamic = "force-dynamic";
 
@@ -154,26 +155,6 @@ export async function POST(request: NextRequest) {
         invalidReason: `Asset mismatch: expected ${paymentRequirements.asset}, got ${paymentPayload.asset}`,
       };
       return NextResponse.json(response);
-    }
-
-    function pubkeyOf(addr: string): `0x${string}` {
-      if (addr.startsWith('0x')) {
-	return addr as `0x${string}`;
-      }
-      return u8aToHex(decodeAddress(addr));
-    }
-
-    async function balanceOf(api: any, address: string, asset?: `0x${string}`): Promise<bigint> {
-      if (asset) {
-	const pubkey = pubkeyOf(address);
-	const vft = new VftProgram(api, paymentPayload.asset);
-	const vftBalance = await vft.vft.balanceOf(pubkey).call();
-	return vftBalance;
-      } else {
-        const { data } = await api.query.system.account(address);
-        const freeBalance = data.free.toBigInt();
-        return freeBalance;
-      }
     }
 
     const amount = BigInt(paymentRequirements.maxAmountRequired);

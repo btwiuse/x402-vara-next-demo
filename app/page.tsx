@@ -1,14 +1,123 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { varaPaymentHeader } from '@/lib/varaPaymentHeader';
+import { varaPaymentHeader, DemoAccount } from '@/lib/varaPaymentHeader';
 import { PaymentRequiredResponse, PaymentRequirements } from '@/lib/x402-protocol-types';
 import { formatBalance } from '@polkadot/util';
 import { useApi } from 'x402-vara/utils';
+import { useAccount } from '@gear-js/react-hooks';
+import { balanceOf } from '@/lib/vara-utils'
+import dynamic from 'next/dynamic';
+
+const Wallet = dynamic(() => import('@gear-js/wallet-connect').then((mod) => mod.Wallet), {
+  ssr: false,
+});
+
+function AccountInfo() {
+  const { wallets, account, isAnyWallet, isAccountReady, login, logout } = useAccount();
+
+  const network = 'vara-testnet';
+
+  const [address, setAddress] = useState<string>("");
+  const [formattedAmount, setFormattedAmount] = useState<string>("loading...");
+  const [formattedTokenAmount, setFormattedTokenAmount] = useState<string>("loading...");
+
+  useEffect(() => {
+    (async () => {
+      let acc: any = account;
+      if (!account) {
+        acc = await DemoAccount();
+      }
+      setAddress(acc?.address);
+    })()
+  }, [account]);
+
+  useEffect(() => {
+    const fetchFormattedAmount = async () => {
+      const asset : any = undefined;
+      const extra : any = undefined;
+      if (!address) {
+        return;
+      }
+      setFormattedAmount("loading...");
+      const api = await useApi(network);
+      const amount = await balanceOf(api, address, asset);
+      const decimals = asset ? (extra as any)?.decimals : api.registry.chainDecimals[0];
+      const unit = asset ? (extra as any)?.name : api.registry.chainTokens[0];
+      const formatOptions = {
+        decimals,
+        withSiFull: true,
+        withZero: false,
+        withUnit: unit,
+        forceUnit: '0',
+      };
+      const formatted = formatBalanceDisplay(amount.toString(), formatOptions);
+      setFormattedAmount(formatted);
+    };
+
+    const fetchFormattedTokenAmount = async () => {
+      const asset : any = '0x64f9def5a6da5a2a847812d615151a88f8c508e062654885267339a8bf29e52f';
+      const extra : any = {
+        name: 'WUSDC',
+        decimals: 6,
+      };
+      if (!address) {
+        return;
+      }
+      setFormattedTokenAmount("loading...");
+      const api = await useApi(network);
+      const amount = await balanceOf(api, address, asset);
+      const decimals = asset ? (extra as any)?.decimals : api.registry.chainDecimals[0];
+      const unit = asset ? (extra as any)?.name : api.registry.chainTokens[0];
+      const formatOptions = {
+        decimals,
+        withSiFull: true,
+        withZero: false,
+        withUnit: unit,
+        forceUnit: '0',
+      };
+      const formatted = formatBalanceDisplay(amount.toString(), formatOptions);
+      setFormattedTokenAmount(formatted);
+    };
+
+    fetchFormattedAmount();
+    fetchFormattedTokenAmount();
+  }, [network, address]);
+
+  if (!isAccountReady) return <div>Loading wallets...</div>;
+
+  return (
+    <div>
+      <br/>
+
+      <p className="text-gray-700">
+        <strong>Wallet information:</strong>
+      </p>
+
+      {!account && (<p className="text-gray-700 mb-4 text-sm">
+        The embedded demo wallet is used as no user wallet is connected.
+      </p>)}
+
+      <div className="mb-4 p-3 bg-white border border-gray-300 rounded text-sm">
+        <p className="text-gray-700 mb-4 text-sm">
+          <strong>Address: </strong>
+          {`${address.slice(0, 10)}...` || 'None'}
+        </p>
+        <p className="text-gray-700 mb-4 text-sm">
+          <strong>Native balance: </strong>
+          {formattedAmount}
+        </p>
+        <p className="text-gray-700 mb-4 text-sm">
+          <strong>VFT balance: </strong>
+          {formattedTokenAmount}
+        </p>
+      </div>
+    </div>
+  );
+}
 
 const formatBalanceDisplay = (balance: string | undefined, options: any = {}) => {
   if (!balance) return "N/A";
-  console.log(JSON.stringify({options}));
   return formatBalance(balance, options);
 }
 
@@ -38,7 +147,7 @@ const PaymentDetailsCard = ({ accept }: { accept: PaymentRequirements }) => {
   return (
     <div className="text-sm">
       <p className="text-gray-700">
-        <strong>Amount:</strong> {formattedAmount}
+        <strong>Price:</strong> {formattedAmount}
       </p>
       <p className="text-gray-700">
         <strong>Recipient:</strong> {payTo ? `${payTo.slice(0, 10)}...` : "N/A"}
@@ -97,6 +206,8 @@ const PaymentDetailsList = ({
 };
 
 export default function Home() {
+  const { wallets, account, isAnyWallet, isAccountReady, login, logout } = useAccount();
+
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<any>(null);
   const [step, setStep] = useState<"initial" | "payment-required" | "success">("initial");
@@ -152,7 +263,10 @@ export default function Home() {
         throw new Error("No payment details available");
       }
 
-      const paymentHeader = await varaPaymentHeader(paymentDetails, selectedIndex);
+      const demoAccount = await DemoAccount();
+      const acc = account ?? demoAccount;
+
+      const paymentHeader = await varaPaymentHeader(paymentDetails, acc, selectedIndex);
 
       // Make request with X-PAYMENT header (per x402 spec)
       const requestHeaders = {
@@ -208,6 +322,9 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white p-8">
       <div className="max-w-7xl mx-auto">
+	<div className="flex justify-end mb-4">
+	  <Wallet />
+	</div>
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-black mb-2">
@@ -299,6 +416,7 @@ export default function Home() {
                 <p className="text-gray-700 mb-4 text-sm">
                   Make a GET request to the weather API without any payment header.
                 </p>
+                <br/>
                 <button
                   onClick={requestWithoutPayment}
                   disabled={loading}
@@ -319,14 +437,22 @@ export default function Home() {
                   The API returned 402 Payment Required. Now retry the request with a signed payment transaction.
                 </p>
                 
+                <AccountInfo />
+
                 {paymentDetails && (
-                  <div className="mb-4 p-3 bg-white border border-gray-300 rounded text-sm">
-		    <PaymentDetailsList
-		      paymentDetails={paymentDetails}
-		      selectedIndex={selectedIndex}
-		      setSelectedIndex={setSelectedIndex}
-		    />
-                  </div>
+		  <>
+		    <p className="text-gray-700">
+		      <strong>Payment options:</strong>
+		    </p>
+
+		    <div className="mb-4 p-3 bg-white border border-gray-300 rounded text-sm">
+		      <PaymentDetailsList
+			paymentDetails={paymentDetails}
+			selectedIndex={selectedIndex}
+			setSelectedIndex={setSelectedIndex}
+		      />
+		    </div>
+		  </>
                 )}
 
                 <button
@@ -348,6 +474,7 @@ export default function Home() {
                 <p className="text-gray-700 mb-4 text-sm">
                   Payment verified and settled. The protected resource has been delivered.
                 </p>
+                <br/>
                 <button
                   onClick={reset}
                   className="w-full bg-black text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-800"
