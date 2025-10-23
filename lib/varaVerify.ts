@@ -5,12 +5,10 @@ import type {
   PaymentPayload,
 } from "@/lib/x402-protocol-types";
 import { X402_VERSION, X402_SCHEME, validVaraNetworks } from "@/lib/x402-protocol-types";
-import { useApi } from "x402-vara/utils";
+import { useApi, balanceOf } from "x402-vara/utils";
 import { verifyWithApi } from "x402-vara/server";
 import { hexToU8a, u8aToHex } from '@polkadot/util'
 import { decodeAddress } from '@polkadot/util-crypto'
-import { VftProgram } from '@/lib/vft'
-import { balanceOf } from '@/lib/vara-utils'
 
 export const dynamic = "force-dynamic";
 

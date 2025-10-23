@@ -4,9 +4,8 @@ import { useEffect, useState } from "react";
 import { varaPaymentHeader, DemoAccount } from '@/lib/varaPaymentHeader';
 import { PaymentRequiredResponse, PaymentRequirements } from '@/lib/x402-protocol-types';
 import { formatBalance } from '@polkadot/util';
-import { useApi } from 'x402-vara/utils';
+import { useApi, balanceOf } from 'x402-vara/utils';
 import { useAccount } from '@gear-js/react-hooks';
-import { balanceOf } from '@/lib/vara-utils'
 import dynamic from 'next/dynamic';
 
 const Wallet = dynamic(() => import('@gear-js/wallet-connect').then((mod) => mod.Wallet), {

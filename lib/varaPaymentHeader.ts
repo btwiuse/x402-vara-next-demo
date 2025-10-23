@@ -5,7 +5,7 @@ import { useApi, createUnsignedTransaction } from 'x402-vara/utils';
 import { Keyring } from "@polkadot/keyring";
 import { hexToU8a, u8aToHex } from '@polkadot/util'
 import { decodeAddress, cryptoWaitReady } from '@polkadot/util-crypto'
-import { VftProgram } from '@/lib/vft'
+import { VftProgram } from 'x402-vara/lib'
 import { signWithKeypair } from 'x402-vara/client';
 import type { WalletKeypair } from 'x402-vara';
 
