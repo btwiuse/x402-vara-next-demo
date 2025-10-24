@@ -55,11 +55,11 @@ Create `.env.local` in your project root:
 # Your wallet address (where payments go)
 PAYMENT_RECIPIENT_ADDRESS=kGkLEU3e3XXkJp2WK4eNpVmSab5xUNL9QtmLPh8QfCL2EgotW
 
-# Use local facilitator url: process.env.NEXT_PUBLIC_URL + '/api/facilitator/vara'
-# FACILITATOR_URL=http://localhost:3000/api/facilitator/vara
+# Use local facilitator url: process.env.NEXT_PUBLIC_URL + '/api/facilitator'
+# FACILITATOR_URL=http://localhost:3000/api/facilitator
 
 # Or the public demo facilitator (perfect for testing)
-FACILITATOR_URL=https://x402-vara-next-demo.up.railway.app/api/facilitator/vara
+FACILITATOR_URL=https://x402-vara-next-demo.up.railway.app/api/facilitator
 ```
 
 **How to get your wallet address:**

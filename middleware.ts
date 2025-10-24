@@ -15,7 +15,7 @@ export const middleware = paymentMiddleware(
     "/api/protected/weather": [
       {
         price: "1000000000000",
-        network: "testnet",
+        network: "vara-testnet",
         config: {
           description: "Access to weather data API (pay in native token)",
         },
@@ -23,7 +23,7 @@ export const middleware = paymentMiddleware(
       {
         price: "1000000",
         asset: "0x64f9def5a6da5a2a847812d615151a88f8c508e062654885267339a8bf29e52f",
-        network: "testnet",
+        network: "vara-testnet",
         config: {
           description: "Access to weather data API (pay in VFT token)",
           extra: {
