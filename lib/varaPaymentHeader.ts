@@ -1,4 +1,4 @@
-import { PaymentRequiredResponse } from '@/lib/x402-protocol-types';
+import { PaymentRequiredResponse } from 'x402-vara/lib';
 import { Keyring } from "@polkadot/keyring";
 import { hexToU8a } from '@polkadot/util';
 import { cryptoWaitReady } from '@polkadot/util-crypto';

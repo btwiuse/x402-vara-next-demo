@@ -3,8 +3,8 @@ import type {
   VerifyRequest,
   VerifyResponse,
   PaymentPayload,
-} from "@/lib/x402-protocol-types";
-import { X402_VERSION, X402_SCHEME, validVaraNetworks } from "@/lib/x402-protocol-types";
+} from "x402-vara/lib";
+import { X402_VERSION, X402_SCHEME, validVaraNetworks } from "x402-vara/lib";
 import { useApi, balanceOf } from "x402-vara/utils";
 import { verifyWithApi } from "x402-vara/server";
 import { hexToU8a, u8aToHex } from '@polkadot/util'
@@ -193,12 +193,7 @@ export async function POST(request: NextRequest) {
     // - verify tx recipient matches payTo
 
     // verify tx signature
-    const result = await verifyWithApi(api)({
-      unsignedTransaction: transaction,
-      signature,
-      signer: transaction.address,
-      network,
-    });
+    const result = await verifyWithApi(api)(paymentPayload);
 
     if (!result.isValid) {
       console.error(`[Facilitator Verify] ❌ Signature verification failed:`, result.invalidReason);

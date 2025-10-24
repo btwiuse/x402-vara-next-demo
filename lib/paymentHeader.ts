@@ -1,4 +1,4 @@
-import { PaymentRequirements, PaymentPayload } from '@/lib/x402-protocol-types';
+import { PaymentRequirements, PaymentPayload } from 'x402-vara/lib';
 import { useApi, createUnsignedTransaction } from 'x402-vara/utils';
 import { u8aToHex } from '@polkadot/util'
 import { decodeAddress } from '@polkadot/util-crypto'
@@ -18,7 +18,7 @@ export function buildTransferTx(api: any, paymentReqs: PaymentRequirements) {
 }
 
 export async function paymentHeader(paymentReqs: PaymentRequirements, account: WalletKeypair, signWith = signWithKeypair) {
-  // Initialize Aptos client
+  // Initialize API client
   const api = await useApi(paymentReqs.network);
 
   // Build transaction

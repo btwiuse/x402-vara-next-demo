@@ -3,8 +3,8 @@ import type {
   SettleRequest,
   SettleResponse,
   PaymentPayload,
-} from "@/lib/x402-protocol-types";
-import { X402_VERSION, X402_SCHEME, validVaraNetworks } from "@/lib/x402-protocol-types";
+} from "x402-vara/lib";
+import { X402_VERSION, X402_SCHEME, validVaraNetworks } from "x402-vara/lib";
 import { useApi } from "x402-vara/utils";
 import { settleWithApi } from "x402-vara/server";
 
@@ -187,12 +187,7 @@ export async function POST(request: NextRequest) {
     const settleOptions = {
       waitForFinalization: false,
     };
-    const result = await settleWithApi(api)({
-      unsignedTransaction: transaction,
-      signature,
-      signer: transaction.address,
-      network,
-    }, settleOptions);
+    const result = await settleWithApi(api)(paymentPayload, settleOptions);
 
     if (!result.success) {
       console.error(`[Facilitator Settle] ❌ Submit transaction failed:`, result.message);

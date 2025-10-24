@@ -6,7 +6,7 @@
  * and import paymentMiddleware from your package.
  */
 
-import { paymentMiddleware } from "./lib/vara-x402-middleware";
+import { paymentMiddleware } from "x402-vara/next";
 
 // Configure protected routes and their payment requirements
 export const middleware = paymentMiddleware(
