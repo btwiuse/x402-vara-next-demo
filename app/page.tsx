@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { varaPaymentHeader, DemoAccount } from '@/lib/varaPaymentHeader';
+import { varaPaymentHeader, DemoAccount } from '@/lib/utils';
 import { PaymentRequiredResponse, PaymentRequirements } from 'x402-vara/lib';
 import { formatBalance } from '@polkadot/util';
 import { useApi, balanceOf } from 'x402-vara/utils';

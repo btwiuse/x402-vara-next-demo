@@ -22,7 +22,6 @@ export const middleware = paymentMiddleware(
       },
       {
         price: "1000000",
-        // asset: "0x974a0e2071d9bfa5de65b307b2b3df5a1d6559b02171dbec5decfbc3bdd24773",
         asset: "0x64f9def5a6da5a2a847812d615151a88f8c508e062654885267339a8bf29e52f",
         network: "testnet",
         config: {
